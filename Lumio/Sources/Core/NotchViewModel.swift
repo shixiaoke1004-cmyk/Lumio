@@ -24,17 +24,24 @@ final class NotchViewModel {
 
     var notchGeometry: NotchGeometry?
 
+    // Always-black footprint that hides the hardware notch even while
+    // the animated shape spring-overshoots below its resting size.
+    var notchBaseSize: NSSize {
+        let notch = notchGeometry?.notchRect.size ?? NotchGeometry.virtualNotchSize
+        return NSSize(width: notch.width + 16, height: notch.height)
+    }
+
     var contentSize: NSSize {
         let notch = notchGeometry?.notchRect.size ?? NotchGeometry.virtualNotchSize
         switch state {
         case .idle:
             return hudVisible
                 ? NSSize(width: notch.width + 220, height: notch.height + 4)
-                : NSSize(width: notch.width + 16, height: notch.height)
+                : notchBaseSize
         case .compact:
             return NSSize(width: notch.width + 120, height: notch.height + 4)
         case .expanded:
-            return NSSize(width: 460, height: 230)
+            return NSSize(width: 460, height: 190)
         }
     }
 

@@ -1,5 +1,20 @@
 import SwiftUI
 
+struct VisualEffectView: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
 struct NotchContainerView: View {
     @Bindable var viewModel: NotchViewModel
     let mediaService: MediaRemoteService
@@ -17,20 +32,20 @@ struct NotchContainerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            // Static cover so the hardware notch never peeks out while the
+            // animated shape spring-overshoots below its resting size.
+            UnevenRoundedRectangle(cornerRadii: .init(bottomLeading: 8, bottomTrailing: 8))
+                .fill(.black)
+                .frame(width: viewModel.notchBaseSize.width, height: viewModel.notchBaseSize.height)
             notchShape
-            Spacer(minLength: 0)
         }
         .frame(width: NotchViewModel.panelSize.width, height: NotchViewModel.panelSize.height, alignment: .top)
     }
 
     private var notchShape: some View {
         ZStack(alignment: .top) {
-            UnevenRoundedRectangle(
-                cornerRadii: .init(bottomLeading: cornerRadius, bottomTrailing: cornerRadius)
-            )
-            .fill(.black)
-
+            shapeBackground
             content
         }
         .frame(width: viewModel.contentSize.width, height: viewModel.contentSize.height)
@@ -50,6 +65,32 @@ struct NotchContainerView: View {
         }
         .onChange(of: hudService.currentHUD) { _, hud in
             viewModel.hudVisible = (hud != nil)
+        }
+    }
+
+    private var notchCorners: RectangleCornerRadii {
+        .init(bottomLeading: cornerRadius, bottomTrailing: cornerRadius)
+    }
+
+    @ViewBuilder
+    private var shapeBackground: some View {
+        if viewModel.state == .expanded {
+            // Frosted glass for the expanded panel; idle/compact stay pure
+            // black to blend into the hardware notch.
+            UnevenRoundedRectangle(cornerRadii: notchCorners)
+                .fill(.black.opacity(0.55))
+                .background(
+                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                        .clipShape(UnevenRoundedRectangle(cornerRadii: notchCorners))
+                )
+                .overlay {
+                    UnevenRoundedRectangle(cornerRadii: notchCorners)
+                        .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.35), radius: 18, y: 8)
+        } else {
+            UnevenRoundedRectangle(cornerRadii: notchCorners)
+                .fill(.black)
         }
     }
 
@@ -113,9 +154,9 @@ struct NotchContainerView: View {
             tabButton(.shelf, symbol: "tray.full")
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
-        .padding(.trailing, 20)
-        .padding(.top, 8)
-        .frame(height: 38, alignment: .bottom)
+        .padding(.trailing, 16)
+        .padding(.top, 6)
+        .frame(height: 30, alignment: .bottom)
     }
 
     private func tabButton(_ tab: ExpandedTab, symbol: String) -> some View {
