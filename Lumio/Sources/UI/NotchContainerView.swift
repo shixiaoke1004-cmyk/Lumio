@@ -3,6 +3,7 @@ import SwiftUI
 struct NotchContainerView: View {
     @Bindable var viewModel: NotchViewModel
     let mediaService: MediaRemoteService
+    let hudService: HUDService
 
     private var cornerRadius: CGFloat {
         switch viewModel.state {
@@ -31,15 +32,23 @@ struct NotchContainerView: View {
         }
         .frame(width: viewModel.contentSize.width, height: viewModel.contentSize.height)
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: viewModel.state)
+        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: viewModel.hudVisible)
         .onHover { viewModel.hoverChanged($0) }
         .onTapGesture { viewModel.toggleExpanded() }
+        .onChange(of: hudService.currentHUD) { _, hud in
+            viewModel.hudVisible = (hud != nil)
+        }
     }
 
     @ViewBuilder
     private var content: some View {
         switch viewModel.state {
         case .idle:
-            Color.clear
+            if let hud = hudService.currentHUD {
+                HUDView(hud: hud)
+            } else {
+                Color.clear
+            }
         case .compact:
             if let nowPlaying = mediaService.nowPlaying {
                 MediaCompactView(nowPlaying: nowPlaying)

@@ -11,6 +11,7 @@ enum NotchState: Equatable {
 final class NotchViewModel {
     var state: NotchState = .idle
     var isHovering = false
+    var hudVisible = false
 
     // Panel canvas is fixed at the max (expanded) size; content shrinks within it.
     static let panelSize = NSSize(width: 640, height: 300)
@@ -21,7 +22,9 @@ final class NotchViewModel {
         let notch = notchGeometry?.notchRect.size ?? NotchGeometry.virtualNotchSize
         switch state {
         case .idle:
-            return NSSize(width: notch.width + 16, height: notch.height)
+            return hudVisible
+                ? NSSize(width: notch.width + 220, height: notch.height + 4)
+                : NSSize(width: notch.width + 16, height: notch.height)
         case .compact:
             return NSSize(width: notch.width + 120, height: notch.height + 4)
         case .expanded:
