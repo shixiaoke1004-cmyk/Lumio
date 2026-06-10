@@ -82,8 +82,8 @@ struct MediaExpandedView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 4)
-        .padding(.bottom, 12)
+        .padding(.top, 14)
+        .padding(.bottom, 8)
         .onReceive(timer) { now = $0 }
     }
 

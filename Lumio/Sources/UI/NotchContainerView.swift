@@ -47,10 +47,11 @@ struct NotchContainerView: View {
         ZStack(alignment: .top) {
             shapeBackground
             content
+                .transition(.blurReplace.combined(with: .opacity))
         }
         .frame(width: viewModel.contentSize.width, height: viewModel.contentSize.height)
-        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: viewModel.state)
-        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: viewModel.hudVisible)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.state)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.hudVisible)
         .onHover { viewModel.hoverChanged($0) }
         .onTapGesture { viewModel.toggleExpanded() }
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
@@ -74,24 +75,21 @@ struct NotchContainerView: View {
 
     @ViewBuilder
     private var shapeBackground: some View {
-        if viewModel.state == .expanded {
-            // Frosted glass for the expanded panel; idle/compact stay pure
-            // black to blend into the hardware notch.
-            UnevenRoundedRectangle(cornerRadii: notchCorners)
-                .fill(.black.opacity(0.55))
-                .background(
-                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
-                        .clipShape(UnevenRoundedRectangle(cornerRadii: notchCorners))
-                )
-                .overlay {
-                    UnevenRoundedRectangle(cornerRadii: notchCorners)
-                        .strokeBorder(.white.opacity(0.08), lineWidth: 1)
-                }
-                .shadow(color: .black.opacity(0.35), radius: 18, y: 8)
-        } else {
-            UnevenRoundedRectangle(cornerRadii: notchCorners)
-                .fill(.black)
-        }
+        let expanded = viewModel.state == .expanded
+        // Every property here is animatable so the black notch morphs into
+        // frosted glass instead of swapping abruptly.
+        UnevenRoundedRectangle(cornerRadii: notchCorners)
+            .fill(.black.opacity(expanded ? 0.55 : 1))
+            .background(
+                VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                    .clipShape(UnevenRoundedRectangle(cornerRadii: notchCorners))
+                    .opacity(expanded ? 1 : 0)
+            )
+            .overlay {
+                UnevenRoundedRectangle(cornerRadii: notchCorners)
+                    .strokeBorder(.white.opacity(expanded ? 0.08 : 0), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(expanded ? 0.35 : 0), radius: 18, y: 8)
     }
 
     @ViewBuilder
