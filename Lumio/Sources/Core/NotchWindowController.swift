@@ -14,10 +14,12 @@ final class NotchHostingView<Content: View>: NSHostingView<Content> {
 final class NotchWindowController {
     private var panel: NotchPanel?
     private let viewModel: NotchViewModel
+    private let mediaService: MediaRemoteService
     private var screenObserver: Any?
 
-    init(viewModel: NotchViewModel) {
+    init(viewModel: NotchViewModel, mediaService: MediaRemoteService) {
         self.viewModel = viewModel
+        self.mediaService = mediaService
     }
 
     func start() {
@@ -56,7 +58,7 @@ final class NotchWindowController {
         panel.isMovable = false
         panel.hidesOnDeactivate = false
 
-        let hosting = NotchHostingView(rootView: NotchContainerView(viewModel: viewModel))
+        let hosting = NotchHostingView(rootView: NotchContainerView(viewModel: viewModel, mediaService: mediaService))
         hosting.frame = panel.contentRect(forFrameRect: panel.frame)
         panel.contentView = hosting
 

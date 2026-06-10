@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NotchContainerView: View {
     @Bindable var viewModel: NotchViewModel
+    let mediaService: MediaRemoteService
 
     private var cornerRadius: CGFloat {
         switch viewModel.state {
@@ -40,28 +41,36 @@ struct NotchContainerView: View {
         case .idle:
             Color.clear
         case .compact:
-            HStack {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(.white.opacity(0.8))
-                    .font(.system(size: 12))
-                Spacer()
-                Image(systemName: "sparkles")
-                    .foregroundStyle(.white.opacity(0.8))
-                    .font(.system(size: 12))
+            if let nowPlaying = mediaService.nowPlaying {
+                MediaCompactView(nowPlaying: nowPlaying)
+            } else {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.white.opacity(0.8))
+                        .font(.system(size: 12))
+                    Spacer()
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.white.opacity(0.8))
+                        .font(.system(size: 12))
+                }
+                .padding(.horizontal, 10)
+                .frame(maxHeight: .infinity)
             }
-            .padding(.horizontal, 10)
-            .frame(maxHeight: .infinity)
         case .expanded:
-            VStack {
-                Text("Lumio")
-                    .font(.title3.bold())
-                    .foregroundStyle(.white)
-                Text("Expanded panel placeholder")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
+            if let nowPlaying = mediaService.nowPlaying {
+                MediaExpandedView(nowPlaying: nowPlaying, service: mediaService)
+            } else {
+                VStack {
+                    Text("Lumio")
+                        .font(.title3.bold())
+                        .foregroundStyle(.white)
+                    Text("Nothing playing")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .padding(.top, 44)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .padding(.top, 44)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 }

@@ -13,19 +13,42 @@ settings:
     GENERATE_INFOPLIST_FILE: true
     CURRENT_PROJECT_VERSION: 1
     MARKETING_VERSION: 0.1.0
-    INFOPLIST_KEY_LSUIElement: true
-    INFOPLIST_KEY_NSHumanReadableCopyright: "MIT License"
     CODE_SIGN_STYLE: Automatic
     CODE_SIGN_IDENTITY: "-"
-    ENABLE_HARDENED_RUNTIME: true
 
 targets:
+  MediaRemoteAdapter:
+    type: framework
+    platform: macOS
+    sources:
+      - path: Vendor/mediaremote-adapter/src
+        compilerFlags: "-fobjc-arc -fvisibility=default"
+      - path: Vendor/mediaremote-adapter/include
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vandenbe.MediaRemoteAdapter
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/Vendor/mediaremote-adapter/src"
+          - "$(SRCROOT)/Vendor/mediaremote-adapter/include"
+        DEFINES_MODULE: false
+        SKIP_INSTALL: true
+        ENABLE_HARDENED_RUNTIME: false
+
   Lumio:
     type: application
     platform: macOS
     sources:
       - path: Lumio/Sources
+      - path: Vendor/mediaremote-adapter/bin/mediaremote-adapter.pl
+        buildPhase: resources
+    dependencies:
+      - target: MediaRemoteAdapter
+        embed: true
+        codeSign: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.lumio.Lumio
+        INFOPLIST_KEY_LSUIElement: true
+        INFOPLIST_KEY_NSHumanReadableCopyright: "MIT License"
         INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        ENABLE_HARDENED_RUNTIME: true
