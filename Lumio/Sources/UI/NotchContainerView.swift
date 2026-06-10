@@ -20,6 +20,7 @@ struct NotchContainerView: View {
     let mediaService: MediaRemoteService
     let hudService: HUDService
     let shelfService: ShelfService
+    let activityService: ActivityService
 
     @State private var isDropTargeted = false
 
@@ -67,6 +68,10 @@ struct NotchContainerView: View {
         .onChange(of: hudService.currentHUD) { _, hud in
             viewModel.hudVisible = (hud != nil)
         }
+        .onChange(of: activityService.currentActivity) { _, activity in
+            viewModel.activityVisible = (activity != nil)
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.activityVisible)
     }
 
     private var notchCorners: RectangleCornerRadii {
@@ -98,6 +103,8 @@ struct NotchContainerView: View {
         case .idle:
             if let hud = hudService.currentHUD {
                 HUDView(hud: hud)
+            } else if let activity = activityService.currentActivity {
+                ActivityView(activity: activity)
             } else {
                 Color.clear
             }

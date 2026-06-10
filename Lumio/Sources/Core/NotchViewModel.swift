@@ -18,6 +18,7 @@ final class NotchViewModel {
     var expandedTab: ExpandedTab = .media
     var isHovering = false
     var hudVisible = false
+    var activityVisible = false
 
     // Panel canvas is fixed at the max (expanded) size; content shrinks within it.
     static let panelSize = NSSize(width: 640, height: 360)
@@ -35,9 +36,13 @@ final class NotchViewModel {
         let notch = notchGeometry?.notchRect.size ?? NotchGeometry.virtualNotchSize
         switch state {
         case .idle:
-            return hudVisible
-                ? NSSize(width: notch.width + 220, height: notch.height + 4)
-                : notchBaseSize
+            if hudVisible {
+                return NSSize(width: notch.width + 220, height: notch.height + 4)
+            }
+            if activityVisible {
+                return NSSize(width: notch.width + 150, height: notch.height + 4)
+            }
+            return notchBaseSize
         case .compact:
             return NSSize(width: notch.width + 120, height: notch.height + 4)
         case .expanded:

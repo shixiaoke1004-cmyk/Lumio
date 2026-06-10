@@ -17,18 +17,21 @@ final class NotchWindowController {
     private let mediaService: MediaRemoteService
     private let hudService: HUDService
     private let shelfService: ShelfService
+    private let activityService: ActivityService
     private var screenObserver: Any?
 
     init(
         viewModel: NotchViewModel,
         mediaService: MediaRemoteService,
         hudService: HUDService,
-        shelfService: ShelfService
+        shelfService: ShelfService,
+        activityService: ActivityService
     ) {
         self.viewModel = viewModel
         self.mediaService = mediaService
         self.hudService = hudService
         self.shelfService = shelfService
+        self.activityService = activityService
     }
 
     func start() {
@@ -71,7 +74,8 @@ final class NotchWindowController {
             viewModel: viewModel,
             mediaService: mediaService,
             hudService: hudService,
-            shelfService: shelfService
+            shelfService: shelfService,
+            activityService: activityService
         ))
         hosting.frame = panel.contentRect(forFrameRect: panel.frame)
         panel.contentView = hosting
