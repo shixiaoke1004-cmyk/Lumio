@@ -18,7 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             HUDService.requestAccessibilityPermission()
         }
         let controller = NotchWindowController(
-            viewModel: viewModel, mediaService: mediaService, hudService: hudService
+            viewModel: viewModel,
+            mediaService: mediaService,
+            hudService: hudService,
+            shelfService: ShelfService()
         )
         controller.start()
         notchWindowController = controller

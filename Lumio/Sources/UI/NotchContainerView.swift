@@ -4,6 +4,9 @@ struct NotchContainerView: View {
     @Bindable var viewModel: NotchViewModel
     let mediaService: MediaRemoteService
     let hudService: HUDService
+    let shelfService: ShelfService
+
+    @State private var isDropTargeted = false
 
     private var cornerRadius: CGFloat {
         switch viewModel.state {
@@ -35,6 +38,16 @@ struct NotchContainerView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: viewModel.hudVisible)
         .onHover { viewModel.hoverChanged($0) }
         .onTapGesture { viewModel.toggleExpanded() }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            shelfService.handleDrop(providers)
+        }
+        .onChange(of: isDropTargeted) { _, targeted in
+            // Dragging a file over the collapsed notch opens the shelf.
+            if targeted, viewModel.state != .expanded {
+                viewModel.state = .expanded
+                viewModel.expandedTab = .shelf
+            }
+        }
         .onChange(of: hudService.currentHUD) { _, hud in
             viewModel.hudVisible = (hud != nil)
         }
@@ -66,20 +79,58 @@ struct NotchContainerView: View {
                 .frame(maxHeight: .infinity)
             }
         case .expanded:
-            if let nowPlaying = mediaService.nowPlaying {
-                MediaExpandedView(nowPlaying: nowPlaying, service: mediaService)
-            } else {
-                VStack {
-                    Text("Lumio")
-                        .font(.title3.bold())
-                        .foregroundStyle(.white)
-                    Text("Nothing playing")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.6))
+            VStack(spacing: 0) {
+                tabBar
+                switch viewModel.expandedTab {
+                case .media:
+                    if let nowPlaying = mediaService.nowPlaying {
+                        MediaExpandedView(nowPlaying: nowPlaying, service: mediaService)
+                    } else {
+                        VStack {
+                            Text("Lumio")
+                                .font(.title3.bold())
+                                .foregroundStyle(.white)
+                            Text("Nothing playing")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                case .shelf:
+                    ShelfView(shelf: shelfService)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 6)
+                        .padding(.bottom, 14)
                 }
-                .padding(.top, 44)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+    }
+
+    private var tabBar: some View {
+        HStack(spacing: 6) {
+            tabButton(.media, symbol: "music.note")
+            tabButton(.shelf, symbol: "tray.full")
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.trailing, 20)
+        .padding(.top, 8)
+        .frame(height: 38, alignment: .bottom)
+    }
+
+    private func tabButton(_ tab: ExpandedTab, symbol: String) -> some View {
+        let selected = viewModel.expandedTab == tab
+        return Button {
+            viewModel.expandedTab = tab
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(selected ? .black : .white.opacity(0.65))
+                .frame(width: 30, height: 22)
+                .background(
+                    Capsule().fill(selected ? Color.white.opacity(0.9) : .white.opacity(0.12))
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

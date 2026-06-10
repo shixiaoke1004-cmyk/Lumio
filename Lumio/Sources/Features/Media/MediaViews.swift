@@ -63,16 +63,16 @@ struct MediaExpandedView: View {
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 14) {
             artwork
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(nowPlaying.title)
-                    .font(.headline)
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 if let artist = nowPlaying.artist {
                     Text(artist)
-                        .font(.subheadline)
+                        .font(.system(size: 11))
                         .foregroundStyle(.white.opacity(0.6))
                         .lineLimit(1)
                 }
@@ -81,9 +81,9 @@ struct MediaExpandedView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 42)
-        .padding(.bottom, 16)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 14)
         .onReceive(timer) { now = $0 }
     }
 
@@ -93,15 +93,15 @@ struct MediaExpandedView: View {
             Image(nsImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 120, height: 120)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .frame(width: 96, height: 96)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         } else {
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(.white.opacity(0.1))
-                .frame(width: 120, height: 120)
+                .frame(width: 96, height: 96)
                 .overlay {
                     Image(systemName: "music.note")
-                        .font(.system(size: 40))
+                        .font(.system(size: 32))
                         .foregroundStyle(.white.opacity(0.4))
                 }
         }
@@ -128,23 +128,22 @@ struct MediaExpandedView: View {
     }
 
     private var controls: some View {
-        HStack(spacing: 28) {
+        HStack(spacing: 22) {
             controlButton("backward.fill") { service.send(.previousTrack) }
-            controlButton(nowPlaying.isPlaying ? "pause.fill" : "play.fill", size: 22) {
+            controlButton(nowPlaying.isPlaying ? "pause.fill" : "play.fill", size: 18) {
                 service.send(.togglePlayPause)
             }
             controlButton("forward.fill") { service.send(.nextTrack) }
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 2)
     }
 
-    private func controlButton(_ symbol: String, size: CGFloat = 16, action: @escaping () -> Void) -> some View {
+    private func controlButton(_ symbol: String, size: CGFloat = 13, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: size, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
+                .frame(width: 30, height: 30)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

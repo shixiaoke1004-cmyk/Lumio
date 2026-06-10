@@ -6,15 +6,21 @@ enum NotchState: Equatable {
     case expanded
 }
 
+enum ExpandedTab: Equatable {
+    case media
+    case shelf
+}
+
 @MainActor
 @Observable
 final class NotchViewModel {
     var state: NotchState = .idle
+    var expandedTab: ExpandedTab = .media
     var isHovering = false
     var hudVisible = false
 
     // Panel canvas is fixed at the max (expanded) size; content shrinks within it.
-    static let panelSize = NSSize(width: 640, height: 300)
+    static let panelSize = NSSize(width: 640, height: 360)
 
     var notchGeometry: NotchGeometry?
 
@@ -28,7 +34,7 @@ final class NotchViewModel {
         case .compact:
             return NSSize(width: notch.width + 120, height: notch.height + 4)
         case .expanded:
-            return NSSize(width: 560, height: 230)
+            return NSSize(width: 460, height: 230)
         }
     }
 
