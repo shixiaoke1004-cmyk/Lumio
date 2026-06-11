@@ -2,24 +2,31 @@ import SwiftUI
 
 struct HUDView: View {
     let hud: HUDKind
+    let notchWidth: CGFloat
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 0) {
+            // Left ear: icon centered, leaving symmetric margins on both sides.
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.white)
-                .frame(width: 18)
                 .contentTransition(.symbolEffect(.replace))
+                .frame(maxWidth: .infinity)
 
+            // Clear gap behind the hardware notch.
+            Color.clear.frame(width: notchWidth)
+
+            // Right ear: progress bar fills the space past the notch.
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.25))
+                    Capsule().fill(.white.opacity(0.22))
                     Capsule()
                         .fill(barColor)
-                        .frame(width: geo.size.width * CGFloat(level))
+                        .frame(width: max(6, geo.size.width * CGFloat(level)))
                 }
             }
             .frame(height: 6)
+            .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 14)
         .frame(maxHeight: .infinity)

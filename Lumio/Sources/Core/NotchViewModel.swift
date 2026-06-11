@@ -33,23 +33,28 @@ final class NotchViewModel {
         return NSSize(width: notch.width + 16, height: notch.height)
     }
 
+    // Width of the hardware notch the side "ears" must leave clear.
+    var notchWidth: CGFloat {
+        notchGeometry?.notchRect.size.width ?? NotchGeometry.virtualNotchSize.width
+    }
+
     var contentSize: NSSize {
         let notch = notchGeometry?.notchRect.size ?? NotchGeometry.virtualNotchSize
         switch state {
         case .idle:
             if hudVisible {
-                return NSSize(width: notch.width + 220, height: notch.height + 4)
+                return NSSize(width: notch.width + 160, height: notch.height + 4)
             }
             if activityVisible {
-                return NSSize(width: notch.width + 150, height: notch.height + 4)
+                return NSSize(width: notch.width + 140, height: notch.height + 4)
             }
             return notchBaseSize
         case .compact:
             if hudVisible {
-                return NSSize(width: notch.width + 220, height: notch.height + 4)
+                return NSSize(width: notch.width + 160, height: notch.height + 4)
             }
             if activityVisible {
-                return NSSize(width: notch.width + 150, height: notch.height + 4)
+                return NSSize(width: notch.width + 140, height: notch.height + 4)
             }
             return NSSize(width: notch.width + 120, height: notch.height + 4)
         case .expanded:

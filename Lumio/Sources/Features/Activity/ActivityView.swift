@@ -2,18 +2,27 @@ import SwiftUI
 
 struct ActivityView: View {
     let activity: ActivityKind
+    let notchWidth: CGFloat
 
     var body: some View {
         switch activity {
         case .battery(let level, let charging):
-            HStack {
+            HStack(spacing: 0) {
+                // Left ear: battery glyph hugs the notch's left edge.
                 Image(systemName: charging ? "battery.100percent.bolt" : batterySymbol(level))
                     .font(.system(size: 14))
                     .foregroundStyle(batteryColor(level, charging: charging))
-                Spacer()
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 10)
+
+                Color.clear.frame(width: notchWidth)
+
+                // Right ear: percentage past the notch.
                 Text("\(level)%")
                     .font(.system(size: 12, weight: .semibold).monospacedDigit())
                     .foregroundStyle(batteryColor(level, charging: charging))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 10)
             }
             .padding(.horizontal, 12)
             .frame(maxHeight: .infinity)

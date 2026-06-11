@@ -118,17 +118,17 @@ struct NotchContainerView: View {
         switch viewModel.state {
         case .idle:
             if let hud = hudService.currentHUD {
-                HUDView(hud: hud)
+                HUDView(hud: hud, notchWidth: viewModel.notchWidth)
             } else if let activity = activityService.currentActivity {
-                ActivityView(activity: activity)
+                ActivityView(activity: activity, notchWidth: viewModel.notchWidth)
             } else {
                 Color.clear
             }
         case .compact:
             if let hud = hudService.currentHUD {
-                HUDView(hud: hud)
+                HUDView(hud: hud, notchWidth: viewModel.notchWidth)
             } else if let activity = activityService.currentActivity {
-                ActivityView(activity: activity)
+                ActivityView(activity: activity, notchWidth: viewModel.notchWidth)
             } else if let nowPlaying = mediaService.nowPlaying {
                 MediaCompactView(nowPlaying: nowPlaying)
             } else {
