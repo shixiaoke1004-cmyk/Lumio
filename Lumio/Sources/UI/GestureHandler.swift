@@ -29,7 +29,7 @@ final class GestureHandler {
     }
 
     private func handle(_ event: NSEvent) {
-        guard event.window is NotchPanel else { return }
+        guard event.window is NotchPanel, AppSettings.shared.gesturesEnabled else { return }
 
         if event.phase == .began || event.timestamp - lastEventTime > 0.3 {
             accumulatedX = 0
@@ -43,7 +43,7 @@ final class GestureHandler {
         accumulatedY += event.scrollingDeltaY
 
         // Natural scrolling: swiping fingers down yields positive deltaY.
-        if accumulatedY < -30, viewModel.state == .expanded {
+        if accumulatedY < -30, viewModel.state == .expanded, !AppSettings.shared.expandLock {
             viewModel.collapse()
             consumed = true
         } else if accumulatedY > 30, viewModel.state != .expanded {

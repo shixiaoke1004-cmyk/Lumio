@@ -19,6 +19,7 @@ final class NotchViewModel {
     var isHovering = false
     var hudVisible = false
     var activityVisible = false
+    var mediaPlaying = false
 
     // Panel canvas is fixed at the max (expanded) size; content shrinks within it.
     static let panelSize = NSSize(width: 640, height: 360)
@@ -44,9 +45,16 @@ final class NotchViewModel {
             }
             return notchBaseSize
         case .compact:
+            if hudVisible {
+                return NSSize(width: notch.width + 220, height: notch.height + 4)
+            }
+            if activityVisible {
+                return NSSize(width: notch.width + 150, height: notch.height + 4)
+            }
             return NSSize(width: notch.width + 120, height: notch.height + 4)
         case .expanded:
-            return NSSize(width: 460, height: 190)
+            let scale = AppSettings.shared.expandedScale
+            return NSSize(width: 460 * scale, height: 190 * scale)
         }
     }
 
@@ -54,16 +62,37 @@ final class NotchViewModel {
         isHovering = hovering
         switch (hovering, state) {
         case (true, .idle):
-            state = .compact
+            if AppSettings.shared.hoverCompactEnabled {
+                state = .compact
+            }
         case (false, .compact):
-            state = .idle
+            // While media plays the compact strip stays up like an ongoing
+            // live activity; it only retracts when playback stops.
+            if !mediaPlaying {
+                state = .idle
+            }
         default:
             break
         }
     }
 
+    func mediaPlayingChanged(_ playing: Bool) {
+        mediaPlaying = playing
+        if playing, state == .idle {
+            state = .compact
+        } else if !playing, state == .compact, !isHovering {
+            state = .idle
+        }
+    }
+
     func toggleExpanded() {
-        state = (state == .expanded) ? .idle : .expanded
+        if state == .expanded {
+            if !AppSettings.shared.expandLock {
+                state = .idle
+            }
+        } else {
+            state = .expanded
+        }
     }
 
     func collapse() {

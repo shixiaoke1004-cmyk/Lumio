@@ -6,14 +6,24 @@ struct LumioApp: App {
 
     var body: some Scene {
         MenuBarExtra("Lumio", systemImage: "sparkles.rectangle.stack") {
-            Button("About Lumio") {
-                NSApp.orderFrontStandardAboutPanel(nil)
-            }
-            Divider()
-            Button("Quit Lumio") {
-                NSApp.terminate(nil)
-            }
-            .keyboardShortcut("q")
+            MenuContent()
         }
+    }
+}
+
+private struct MenuContent: View {
+    var body: some View {
+        Button(L("menu.about")) {
+            NSApp.orderFrontStandardAboutPanel(nil)
+        }
+        Button(L("menu.settings")) {
+            SettingsWindowManager.shared.open()
+        }
+        .keyboardShortcut(",")
+        Divider()
+        Button(L("menu.quit")) {
+            NSApp.terminate(nil)
+        }
+        .keyboardShortcut("q")
     }
 }

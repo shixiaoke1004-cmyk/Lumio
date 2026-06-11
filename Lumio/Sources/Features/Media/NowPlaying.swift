@@ -14,8 +14,16 @@ struct NowPlaying: Equatable {
 
     var estimatedElapsedTime: TimeInterval? {
         guard let elapsedTime else { return nil }
-        guard isPlaying, let timestamp else { return elapsedTime }
-        return elapsedTime + Date().timeIntervalSince(timestamp)
+        var estimate = elapsedTime
+        if isPlaying, let timestamp {
+            // Diff updates can pair a fresh `playing` flag with a stale
+            // timestamp, so extrapolation must be clamped to the track length.
+            estimate += Date().timeIntervalSince(timestamp)
+        }
+        if let duration, duration > 0 {
+            estimate = min(estimate, duration)
+        }
+        return max(0, estimate)
     }
 }
 

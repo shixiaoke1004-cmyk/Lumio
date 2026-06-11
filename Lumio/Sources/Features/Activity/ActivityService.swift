@@ -38,7 +38,7 @@ final class ActivityService {
     }
 
     private func powerSourceChanged() {
-        guard let snapshot = Self.batterySnapshot() else { return }
+        guard AppSettings.shared.batteryActivityEnabled, let snapshot = Self.batterySnapshot() else { return }
 
         if snapshot.charging != lastCharging {
             lastCharging = snapshot.charging
@@ -54,9 +54,10 @@ final class ActivityService {
         }
     }
 
-    private func show(_ activity: ActivityKind, duration: TimeInterval = 2.5) {
+    private func show(_ activity: ActivityKind) {
         currentActivity = activity
         dismissTask?.cancel()
+        let duration = AppSettings.shared.activityDuration
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(duration))
             guard !Task.isCancelled else { return }

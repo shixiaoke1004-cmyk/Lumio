@@ -31,7 +31,7 @@ struct ShelfView: View {
         HStack(spacing: 8) {
             Image(systemName: "tray.and.arrow.down")
                 .font(.system(size: 16))
-            Text("Drop files here")
+            Text(L("shelf.dropHere"))
                 .font(.caption)
         }
         .foregroundStyle(.white.opacity(0.45))
@@ -54,7 +54,7 @@ struct ShelfView: View {
                 Button {
                     shelf.clear()
                 } label: {
-                    Label("Clear", systemImage: "trash")
+                    Label(L("shelf.clear"), systemImage: "trash")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
                         .padding(.horizontal, 12)
@@ -62,11 +62,11 @@ struct ShelfView: View {
                         .background(Capsule().fill(.white.opacity(0.12)))
                 }
                 .buttonStyle(.plain)
-                .help("Remove all items")
+                .help(L("shelf.clear.help"))
                 Button {
                     shelf.airDrop(shelf.items)
                 } label: {
-                    Label("AirDrop", systemImage: "shareplay")
+                    Label(L("shelf.airdrop"), systemImage: "shareplay")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)
@@ -74,7 +74,7 @@ struct ShelfView: View {
                         .background(Capsule().fill(.white.opacity(0.18)))
                 }
                 .buttonStyle(.plain)
-                .help("AirDrop all items")
+                .help(L("shelf.airdrop.help"))
             }
             .padding(.horizontal, 10)
             .padding(.bottom, 8)

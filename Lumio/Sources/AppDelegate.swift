@@ -1,6 +1,11 @@
 import AppKit
+import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    // With the SwiftUI lifecycle, NSApp.delegate is SwiftUI's own wrapper,
+    // so `NSApp.delegate as? AppDelegate` is nil — expose the instance instead.
+    @MainActor private(set) static var shared: AppDelegate?
+
     private var notchWindowController: NotchWindowController?
     private var mediaService: MediaRemoteService?
     private var hudService: HUDService?
@@ -8,16 +13,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var gestureHandler: GestureHandler?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        AppDelegate.shared = self
         NSApp.setActivationPolicy(.accessory)
 
         let viewModel = NotchViewModel()
         let mediaService = MediaRemoteService()
         mediaService.start()
         let hudService = HUDService()
-        if HUDService.hasAccessibilityPermission {
-            hudService.start()
-        } else {
-            HUDService.requestAccessibilityPermission()
+        if AppSettings.shared.hudEnabled {
+            if HUDService.hasAccessibilityPermission {
+                hudService.start()
+            } else {
+                HUDService.requestAccessibilityPermission()
+            }
         }
         let activityService = ActivityService()
         activityService.start()
@@ -36,6 +44,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.hudService = hudService
         self.activityService = activityService
         self.gestureHandler = gestureHandler
+    }
+
+    @MainActor
+    func applyHUDSetting() {
+        guard let hudService else { return }
+        if AppSettings.shared.hudEnabled {
+            if HUDService.hasAccessibilityPermission {
+                hudService.start()
+            } else {
+                HUDService.requestAccessibilityPermission()
+            }
+        } else {
+            hudService.stop()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

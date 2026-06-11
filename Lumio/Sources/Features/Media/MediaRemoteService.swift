@@ -94,10 +94,27 @@ final class MediaRemoteService {
                     currentPayload[key] = value
                 }
             }
+            // A `playing` flip without a fresh timestamp would otherwise be
+            // extrapolated from the stale timestamp, making the elapsed time
+            // jump by the whole pause duration.
+            if payload["playing"] != nil, payload["timestamp"] == nil {
+                currentPayload["timestamp"] = Self.fractionalFormatter.string(from: Date())
+            }
         } else {
             currentPayload = payload.filter { !($0.value is NSNull) }
         }
         nowPlaying = Self.parse(currentPayload)
+    }
+
+    private static let fractionalFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    private static let plainFormatter = ISO8601DateFormatter()
+
+    private static func parseTimestamp(_ string: String) -> Date? {
+        fractionalFormatter.date(from: string) ?? plainFormatter.date(from: string)
     }
 
     private static func parse(_ dict: [String: Any]) -> NowPlaying? {
@@ -109,7 +126,7 @@ final class MediaRemoteService {
 
         var timestamp: Date?
         if let ts = dict["timestamp"] as? String {
-            timestamp = ISO8601DateFormatter().date(from: ts)
+            timestamp = Self.parseTimestamp(ts)
         }
 
         var artworkData: Data?

@@ -139,8 +139,9 @@ final class HUDService {
     private func show(_ hud: HUDKind) {
         currentHUD = hud
         dismissTask?.cancel()
+        let duration = AppSettings.shared.hudDuration
         dismissTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: .seconds(duration))
             guard !Task.isCancelled else { return }
             self?.currentHUD = nil
         }

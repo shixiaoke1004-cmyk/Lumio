@@ -51,8 +51,10 @@ struct NotchContainerView: View {
                 .transition(.blurReplace.combined(with: .opacity))
         }
         .frame(width: viewModel.contentSize.width, height: viewModel.contentSize.height)
+        .offset(x: expandedXOffset)
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.state)
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.hudVisible)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: expandedXOffset)
         .onHover { viewModel.hoverChanged($0) }
         .onTapGesture { viewModel.toggleExpanded() }
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
@@ -71,7 +73,20 @@ struct NotchContainerView: View {
         .onChange(of: activityService.currentActivity) { _, activity in
             viewModel.activityVisible = (activity != nil)
         }
+        .onChange(of: mediaService.nowPlaying?.isPlaying ?? false, initial: true) { _, playing in
+            viewModel.mediaPlayingChanged(playing)
+        }
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.activityVisible)
+    }
+
+    private var expandedXOffset: CGFloat {
+        guard viewModel.state == .expanded else { return 0 }
+        let margin = (NotchViewModel.panelSize.width - viewModel.contentSize.width) / 2
+        switch AppSettings.shared.expandedPosition {
+        case .left: return -margin
+        case .center: return 0
+        case .right: return margin
+        }
     }
 
     private var notchCorners: RectangleCornerRadii {
@@ -109,7 +124,11 @@ struct NotchContainerView: View {
                 Color.clear
             }
         case .compact:
-            if let nowPlaying = mediaService.nowPlaying {
+            if let hud = hudService.currentHUD {
+                HUDView(hud: hud)
+            } else if let activity = activityService.currentActivity {
+                ActivityView(activity: activity)
+            } else if let nowPlaying = mediaService.nowPlaying {
                 MediaCompactView(nowPlaying: nowPlaying)
             } else {
                 HStack {
@@ -136,7 +155,7 @@ struct NotchContainerView: View {
                             Text("Lumio")
                                 .font(.title3.bold())
                                 .foregroundStyle(.white)
-                            Text("Nothing playing")
+                            Text(L("media.nothingPlaying"))
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.6))
                         }
@@ -149,17 +168,40 @@ struct NotchContainerView: View {
                         .padding(.bottom, 14)
                 }
             }
+            .padding(.top, AppSettings.shared.expandedTopOffset)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 
     private var tabBar: some View {
         HStack(spacing: 6) {
+            if AppSettings.shared.expandLock {
+                Button {
+                    viewModel.collapse()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.65))
+                        .frame(width: 30, height: 22)
+                        .background(Capsule().fill(.white.opacity(0.12)))
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
             tabButton(.media, symbol: "music.note")
             tabButton(.shelf, symbol: "tray.full")
+            Button {
+                SettingsWindowManager.shared.open()
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .frame(width: 30, height: 22)
+                    .background(Capsule().fill(.white.opacity(0.12)))
+            }
+            .buttonStyle(.plain)
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .padding(.trailing, 16)
+        .padding(.horizontal, 16)
         .padding(.top, 6)
         .frame(height: 30, alignment: .bottom)
     }
