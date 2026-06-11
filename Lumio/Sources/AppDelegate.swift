@@ -21,11 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mediaService.start()
         let hudService = HUDService()
         if AppSettings.shared.hudEnabled {
-            if HUDService.hasAccessibilityPermission {
-                hudService.start()
-            } else {
-                HUDService.requestAccessibilityPermission()
-            }
+            hudService.startWhenAuthorized()
         }
         let activityService = ActivityService()
         activityService.start()
@@ -50,11 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applyHUDSetting() {
         guard let hudService else { return }
         if AppSettings.shared.hudEnabled {
-            if HUDService.hasAccessibilityPermission {
-                hudService.start()
-            } else {
-                HUDService.requestAccessibilityPermission()
-            }
+            hudService.startWhenAuthorized()
         } else {
             hudService.stop()
         }

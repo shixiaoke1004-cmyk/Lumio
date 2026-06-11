@@ -15,6 +15,7 @@ final class HUDService {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var dismissTask: Task<Void, Never>?
+    private var authPollTask: Task<Void, Never>?
     private let logger = Logger(subsystem: "app.lumio.Lumio", category: "HUD")
 
     // NX key types from IOKit/hidsystem/ev_keymap.h
@@ -31,6 +32,31 @@ final class HUDService {
     static func requestAccessibilityPermission() {
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         AXIsProcessTrustedWithOptions(options)
+    }
+
+    // Accessibility grants are keyed to the binary's code signature; an
+    // adhoc-signed build that is rebuilt or moved loses its grant, and the
+    // user re-enables it in System Settings while the app is already running.
+    // Prompt once, then poll so the tap comes up the moment trust is granted
+    // instead of forcing a relaunch.
+    func startWhenAuthorized() {
+        if Self.hasAccessibilityPermission {
+            start()
+            return
+        }
+        Self.requestAccessibilityPermission()
+        guard authPollTask == nil else { return }
+        authPollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let self else { return }
+                if Self.hasAccessibilityPermission {
+                    self.authPollTask = nil
+                    self.start()
+                    return
+                }
+            }
+        }
     }
 
     func start() {
@@ -72,6 +98,8 @@ final class HUDService {
     }
 
     func stop() {
+        authPollTask?.cancel()
+        authPollTask = nil
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
