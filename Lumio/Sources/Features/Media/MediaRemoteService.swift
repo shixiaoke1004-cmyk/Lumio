@@ -8,6 +8,8 @@ final class MediaRemoteService {
 
     private var streamProcess: Process?
     private var currentPayload: [String: Any] = [:]
+    private var restartTask: Task<Void, Never>?
+    private var stopped = false
     private let logger = Logger(subsystem: "app.lumio.Lumio", category: "MediaRemote")
 
     private static var scriptURL: URL? {
@@ -19,6 +21,11 @@ final class MediaRemoteService {
     }
 
     func start() {
+        stopped = false
+        launchStream()
+    }
+
+    private func launchStream() {
         guard streamProcess == nil else { return }
         guard let script = Self.scriptURL, let framework = Self.frameworkURL else {
             logger.error("adapter script or framework missing from bundle")
@@ -46,8 +53,16 @@ final class MediaRemoteService {
 
         process.terminationHandler = { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.streamProcess = nil
-                self?.logger.warning("adapter stream terminated")
+                guard let self else { return }
+                self.streamProcess = nil
+                guard !self.stopped else { return }
+                self.logger.warning("adapter stream terminated, restarting in 2s")
+                self.restartTask?.cancel()
+                self.restartTask = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(2))
+                    guard !Task.isCancelled else { return }
+                    self?.launchStream()
+                }
             }
         }
 
@@ -60,6 +75,8 @@ final class MediaRemoteService {
     }
 
     func stop() {
+        stopped = true
+        restartTask?.cancel()
         streamProcess?.terminate()
         streamProcess = nil
     }
@@ -87,18 +104,24 @@ final class MediaRemoteService {
 
         let isDiff = json["diff"] as? Bool ?? false
         if isDiff {
+            // A `playing` flip arrives in its own diff; the matching
+            // elapsedTime/timestamp follow ~100ms later. Freeze the currently
+            // displayed (extrapolated) position so the UI doesn't fall back
+            // to the stale stored elapsedTime in between.
+            if payload["playing"] != nil, payload["elapsedTime"] == nil {
+                if let estimate = nowPlaying?.estimatedElapsedTime {
+                    currentPayload["elapsedTime"] = estimate
+                }
+                if payload["timestamp"] == nil {
+                    currentPayload["timestamp"] = Self.fractionalFormatter.string(from: Date())
+                }
+            }
             for (key, value) in payload {
                 if value is NSNull {
                     currentPayload.removeValue(forKey: key)
                 } else {
                     currentPayload[key] = value
                 }
-            }
-            // A `playing` flip without a fresh timestamp would otherwise be
-            // extrapolated from the stale timestamp, making the elapsed time
-            // jump by the whole pause duration.
-            if payload["playing"] != nil, payload["timestamp"] == nil {
-                currentPayload["timestamp"] = Self.fractionalFormatter.string(from: Date())
             }
         } else {
             currentPayload = payload.filter { !($0.value is NSNull) }

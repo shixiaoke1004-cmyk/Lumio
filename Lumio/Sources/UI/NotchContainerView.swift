@@ -54,6 +54,7 @@ struct NotchContainerView: View {
         .offset(x: expandedXOffset)
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.state)
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.hudVisible)
+        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.contentSize)
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: expandedXOffset)
         .onHover { viewModel.hoverChanged($0) }
         .onTapGesture { viewModel.toggleExpanded() }

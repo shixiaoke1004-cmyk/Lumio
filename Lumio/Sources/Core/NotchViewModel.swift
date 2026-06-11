@@ -88,7 +88,7 @@ final class NotchViewModel {
     func toggleExpanded() {
         if state == .expanded {
             if !AppSettings.shared.expandLock {
-                state = .idle
+                collapse()
             }
         } else {
             state = .expanded
@@ -96,6 +96,8 @@ final class NotchViewModel {
     }
 
     func collapse() {
-        state = .idle
+        // While media plays the island falls back to the compact strip,
+        // mirroring an ongoing live activity, not to the bare notch.
+        state = mediaPlaying ? .compact : .idle
     }
 }
