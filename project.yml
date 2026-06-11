@@ -52,3 +52,4 @@ targets:
         INFOPLIST_KEY_NSHumanReadableCopyright: "MIT License"
         INFOPLIST_KEY_NSPrincipalClass: NSApplication
         ENABLE_HARDENED_RUNTIME: true
+        CODE_SIGN_ENTITLEMENTS: Lumio/Lumio.entitlements
