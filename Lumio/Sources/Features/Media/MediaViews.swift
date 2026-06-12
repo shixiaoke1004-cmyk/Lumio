@@ -30,28 +30,34 @@ struct MediaCompactView: View {
     }
 }
 
+// Time-driven via TimelineView instead of an implicit `.repeatForever`
+// animation: a perpetually running implicit animation leaks into unrelated
+// layout changes (the whole bar group swayed sideways whenever the notch
+// resized), and TimelineView costs nothing while paused.
 struct PlaybackBars: View {
     let animating: Bool
-    @State private var phase = false
 
-    private let barCount = 4
+    private static let speeds: [Double] = [5.2, 6.6, 5.9, 7.4]
+    private static let offsets: [Double] = [0, 1.9, 0.8, 2.6]
 
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<barCount, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(.green)
-                    .frame(width: 2.5, height: animating ? (phase ? heights(index).0 : heights(index).1) : 4)
+        TimelineView(.animation(minimumInterval: 1 / 24, paused: !animating)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 2) {
+                ForEach(0..<4, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(.green)
+                        .frame(width: 2.5, height: barHeight(index, t))
+                }
             }
+            .frame(width: 20, height: 16, alignment: .bottom)
         }
-        .frame(width: 20, height: 16, alignment: .bottom)
-        .animation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true), value: phase)
-        .onAppear { phase = true }
     }
 
-    private func heights(_ index: Int) -> (CGFloat, CGFloat) {
-        let pairs: [(CGFloat, CGFloat)] = [(14, 6), (8, 15), (15, 5), (7, 12)]
-        return pairs[index % pairs.count]
+    private func barHeight(_ index: Int, _ time: Double) -> CGFloat {
+        guard animating else { return 4 }
+        let wave = sin(time * Self.speeds[index] + Self.offsets[index])
+        return 9.5 + 5.5 * wave
     }
 }
 
