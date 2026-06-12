@@ -20,7 +20,9 @@ final class ActivityService {
         guard let source = IOPSNotificationCreateRunLoopSource({ ctx in
             guard let ctx else { return }
             let service = Unmanaged<ActivityService>.fromOpaque(ctx).takeUnretainedValue()
-            DispatchQueue.main.async {
+            // The source is added to the main run loop, so this already runs
+            // on the main thread; no need to bounce through another async hop.
+            MainActor.assumeIsolated {
                 service.powerSourceChanged()
             }
         }, context)?.takeRetainedValue() else { return }

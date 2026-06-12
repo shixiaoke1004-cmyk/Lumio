@@ -92,12 +92,23 @@ final class MediaRemoteService {
         process.arguments = [script.path, framework.path] + arguments
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
-        try? process.run()
+        do {
+            try process.run()
+        } catch {
+            logger.error("one-shot adapter command failed to launch: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func handleLine(_ line: Data) {
+        let object: Any
+        do {
+            object = try JSONSerialization.jsonObject(with: line)
+        } catch {
+            logger.debug("ignoring malformed adapter line: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         guard
-            let json = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
+            let json = object as? [String: Any],
             json["type"] as? String == "data",
             let payload = json["payload"] as? [String: Any]
         else { return }

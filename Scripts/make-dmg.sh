@@ -31,6 +31,14 @@ STAGING=$(mktemp -d /tmp/lumio-dmg.XXXXXX)
 cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 
+# Re-sign ad-hoc for distribution: the build is signed with the local
+# "Lumio Self-Signed" cert, which other machines don't trust — combined with
+# hardened runtime this makes dyld reject the embedded framework there
+# ("different Team IDs"). Ad-hoc signatures need no trust chain, and dropping
+# --options runtime disables library validation entirely.
+codesign --force --deep --sign - "$STAGING/Lumio.app"
+codesign --verify --deep --strict "$STAGING/Lumio.app"
+
 hdiutil create \
     -volname "Lumio $VERSION" \
     -srcfolder "$STAGING" \
@@ -39,6 +47,8 @@ hdiutil create \
 rm -rf "$STAGING"
 
 echo "Created $DMG"
+echo "note: the app is ad-hoc signed; on other machines, right-click > Open the"
+echo "      first time to bypass Gatekeeper."
 echo "note: for public distribution, codesign with a Developer ID and notarize:"
 echo "  codesign --deep --force --options runtime --sign 'Developer ID Application: ...' <app>"
 echo "  xcrun notarytool submit $DMG --keychain-profile <profile> --wait"

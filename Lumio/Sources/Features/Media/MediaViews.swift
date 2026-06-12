@@ -59,9 +59,6 @@ struct MediaExpandedView: View {
     let nowPlaying: NowPlaying
     let service: MediaRemoteService
 
-    @State private var now = Date()
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
     var body: some View {
         HStack(spacing: 14) {
             artwork
@@ -84,7 +81,6 @@ struct MediaExpandedView: View {
         .padding(.horizontal, 20)
         .padding(.top, 14)
         .padding(.bottom, 8)
-        .onReceive(timer) { now = $0 }
     }
 
     @ViewBuilder
@@ -108,21 +104,25 @@ struct MediaExpandedView: View {
     }
 
     private var progressBar: some View {
-        VStack(spacing: 3) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.2))
-                    Capsule().fill(.white).frame(width: geo.size.width * progress)
+        // The animation schedule pauses while playback is paused and while the
+        // view is off-screen, so the bar only redraws when it can move.
+        TimelineView(.animation(minimumInterval: 1, paused: !nowPlaying.isPlaying)) { _ in
+            VStack(spacing: 3) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.2))
+                        Capsule().fill(.white).frame(width: geo.size.width * progress)
+                    }
                 }
+                .frame(height: 4)
+                HStack {
+                    Text(format(elapsed))
+                    Spacer()
+                    Text(format(nowPlaying.duration ?? 0))
+                }
+                .font(.system(size: 10).monospacedDigit())
+                .foregroundStyle(.white.opacity(0.5))
             }
-            .frame(height: 4)
-            HStack {
-                Text(format(elapsed))
-                Spacer()
-                Text(format(nowPlaying.duration ?? 0))
-            }
-            .font(.system(size: 10).monospacedDigit())
-            .foregroundStyle(.white.opacity(0.5))
         }
         .padding(.top, 4)
     }
@@ -150,9 +150,7 @@ struct MediaExpandedView: View {
     }
 
     private var elapsed: TimeInterval {
-        // `now` ties this to the 1s timer so the bar advances during playback.
-        _ = now
-        return nowPlaying.estimatedElapsedTime ?? 0
+        nowPlaying.estimatedElapsedTime ?? 0
     }
 
     private var progress: CGFloat {
