@@ -9,6 +9,7 @@ enum NotchState: Equatable {
 enum ExpandedTab: Equatable {
     case media
     case shelf
+    case copilot
 }
 
 @MainActor
@@ -21,8 +22,11 @@ final class NotchViewModel {
     var activityVisible = false
     var mediaPlaying = false
 
-    // Panel canvas is fixed at the max (expanded) size; content shrinks within it.
-    static let panelSize = NSSize(width: 640, height: 360)
+    // Panel canvas is fixed at the max (expanded) size; content shrinks within
+    // it. Sized with generous horizontal/vertical slack so the largest expanded
+    // panel (copilot at max scale) plus its drop shadow never clip, and so the
+    // left/right position offset still has room to travel.
+    static let panelSize = NSSize(width: 760, height: 480)
 
     var notchGeometry: NotchGeometry?
 
@@ -36,6 +40,26 @@ final class NotchViewModel {
     // Width of the hardware notch the side "ears" must leave clear.
     var notchWidth: CGFloat {
         notchGeometry?.notchRect.size.width ?? NotchGeometry.virtualNotchSize.width
+    }
+
+    // Height of the hardware notch; the expanded content reserves this much
+    // at the top so nothing ever sits behind the physical notch.
+    var notchHeight: CGFloat {
+        notchGeometry?.notchRect.size.height ?? NotchGeometry.virtualNotchSize.height
+    }
+
+    // Expanded content is authored at this fixed base size, then scaled by
+    // `expandedScale` via .scaleEffect so every icon/font/padding tracks the
+    // setting uniformly instead of staying at a fixed point size.
+    static let expandedBodyWidth: CGFloat = 460
+    // Fixed gap below the notch before the content (tab bar) begins.
+    static let expandedTopOffset: CGFloat = 24
+    var expandedBodyHeight: CGFloat {
+        switch expandedTab {
+        case .copilot: 280   // room for streaming answer text
+        case .shelf: 190
+        case .media: 150     // tabBar + 96pt artwork row, no dead space
+        }
     }
 
     var contentSize: NSSize {
@@ -58,8 +82,15 @@ final class NotchViewModel {
             }
             return NSSize(width: notch.width + 120, height: notch.height + 4)
         case .expanded:
+            // Width/body scale with the setting; the notch reserve and the
+            // user top offset stay in screen points (added unscaled) so the
+            // tab bar always clears the physical notch at every scale.
             let scale = AppSettings.shared.expandedScale
-            return NSSize(width: 460 * scale, height: 190 * scale)
+            let topReserve = notchHeight + Self.expandedTopOffset
+            return NSSize(
+                width: Self.expandedBodyWidth * scale,
+                height: topReserve + expandedBodyHeight * scale
+            )
         }
     }
 

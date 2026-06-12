@@ -2,7 +2,10 @@ import AppKit
 import SwiftUI
 
 final class NotchPanel: NSPanel {
-    override var canBecomeKey: Bool { false }
+    // Key status is only allowed while the copilot's text field needs the
+    // keyboard; otherwise clicks on the island must never steal key focus.
+    var allowsKey = false
+    override var canBecomeKey: Bool { allowsKey }
     override var canBecomeMain: Bool { false }
 }
 
@@ -18,6 +21,7 @@ final class NotchWindowController {
     private let hudService: HUDService
     private let shelfService: ShelfService
     private let activityService: ActivityService
+    private let copilotService: CopilotService
     private var screenObserver: Any?
 
     init(
@@ -25,13 +29,15 @@ final class NotchWindowController {
         mediaService: MediaRemoteService,
         hudService: HUDService,
         shelfService: ShelfService,
-        activityService: ActivityService
+        activityService: ActivityService,
+        copilotService: CopilotService
     ) {
         self.viewModel = viewModel
         self.mediaService = mediaService
         self.hudService = hudService
         self.shelfService = shelfService
         self.activityService = activityService
+        self.copilotService = copilotService
     }
 
     func start() {
@@ -69,19 +75,25 @@ final class NotchWindowController {
         panel.hasShadow = false
         panel.isMovable = false
         panel.hidesOnDeactivate = false
+        panel.sharingType = AppSettings.shared.stealthMode ? .none : .readOnly
 
         let hosting = NotchHostingView(rootView: NotchContainerView(
             viewModel: viewModel,
             mediaService: mediaService,
             hudService: hudService,
             shelfService: shelfService,
-            activityService: activityService
+            activityService: activityService,
+            copilotService: copilotService
         ))
         hosting.frame = panel.contentRect(forFrameRect: panel.frame)
         panel.contentView = hosting
 
         panel.orderFrontRegardless()
         self.panel = panel
+    }
+
+    func applyStealth() {
+        panel?.sharingType = AppSettings.shared.stealthMode ? .none : .readOnly
     }
 
     private func repositionPanel() {

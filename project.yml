@@ -50,6 +50,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.lumio.Lumio
         INFOPLIST_KEY_LSUIElement: true
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Lumio transcribes the call audio on-device so the AI copilot can suggest answers."
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Lumio transcribes your microphone on-device so the meeting transcript includes your side of the conversation."
         INFOPLIST_KEY_NSHumanReadableCopyright: "MIT License"
         INFOPLIST_KEY_NSPrincipalClass: NSApplication
         ENABLE_HARDENED_RUNTIME: true

@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -11,6 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hudService: HUDService?
     private var activityService: ActivityService?
     private var gestureHandler: GestureHandler?
+    private var copilotService: CopilotService?
+    private var notchViewModel: NotchViewModel?
+    private var copilotHotKey: HotKey?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
@@ -27,19 +31,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         activityService.start()
         let gestureHandler = GestureHandler(viewModel: viewModel, mediaService: mediaService)
         gestureHandler.start()
+        let copilotService = CopilotService()
         let controller = NotchWindowController(
             viewModel: viewModel,
             mediaService: mediaService,
             hudService: hudService,
             shelfService: ShelfService(),
-            activityService: activityService
+            activityService: activityService,
+            copilotService: copilotService
         )
         controller.start()
+        self.copilotService = copilotService
+        notchViewModel = viewModel
+
+        // Option+Space summons the copilot even from full-screen calls.
+        copilotHotKey = HotKey(
+            keyCode: UInt32(kVK_Space),
+            modifiers: UInt32(optionKey)
+        ) { [weak self] in
+            self?.toggleCopilot()
+        }
         notchWindowController = controller
         self.mediaService = mediaService
         self.hudService = hudService
         self.activityService = activityService
         self.gestureHandler = gestureHandler
+    }
+
+    @MainActor
+    private func toggleCopilot() {
+        guard AppSettings.shared.copilotEnabled, let viewModel = notchViewModel else { return }
+        if viewModel.state == .expanded, viewModel.expandedTab == .copilot {
+            viewModel.collapse()
+        } else {
+            viewModel.expandedTab = .copilot
+            viewModel.state = .expanded
+        }
+    }
+
+    @MainActor
+    func applyStealthSetting() {
+        notchWindowController?.applyStealth()
     }
 
     @MainActor
@@ -57,5 +89,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hudService?.stop()
         activityService?.stop()
         gestureHandler?.stop()
+        MainActor.assumeIsolated {
+            copilotService?.shutdown()
+            copilotHotKey?.unregister()
+        }
     }
 }

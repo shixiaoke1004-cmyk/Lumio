@@ -21,6 +21,7 @@ struct NotchContainerView: View {
     let hudService: HUDService
     let shelfService: ShelfService
     let activityService: ActivityService
+    let copilotService: CopilotService
 
     @State private var isDropTargeted = false
 
@@ -82,7 +83,14 @@ struct NotchContainerView: View {
 
     private var expandedXOffset: CGFloat {
         guard viewModel.state == .expanded else { return 0 }
-        let margin = (NotchViewModel.panelSize.width - viewModel.contentSize.width) / 2
+        let half = viewModel.contentSize.width / 2
+        // The glass must always blanket the static notch cover; otherwise the
+        // opaque black notch detaches and "sticks out" beside the panel.
+        let notchClamp = half - (viewModel.notchWidth + 16) / 2 - 20
+        // It must also stay clear of the window edge so the drop shadow never
+        // clips when shifted left or right.
+        let shadowClamp = NotchViewModel.panelSize.width / 2 - half - 30
+        let margin = max(0, min(notchClamp, shadowClamp))
         switch AppSettings.shared.expandedPosition {
         case .left: return -margin
         case .center: return 0
@@ -145,33 +153,51 @@ struct NotchContainerView: View {
                 .frame(maxHeight: .infinity)
             }
         case .expanded:
-            VStack(spacing: 0) {
-                tabBar
-                switch viewModel.expandedTab {
-                case .media:
-                    if let nowPlaying = mediaService.nowPlaying {
-                        MediaExpandedView(nowPlaying: nowPlaying, service: mediaService)
-                    } else {
-                        VStack {
-                            Text("Lumio")
-                                .font(.title3.bold())
-                                .foregroundStyle(.white)
-                            Text(L("media.nothingPlaying"))
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.6))
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                case .shelf:
-                    ShelfView(shelf: shelfService)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 6)
-                        .padding(.bottom, 14)
-                }
-            }
-            .padding(.top, AppSettings.shared.expandedTopOffset)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            expandedContent
         }
+    }
+
+    // Authored at a fixed base size and uniformly scaled by `expandedScale`
+    // so icons, fonts and paddings all track the setting. A top strip equal
+    // to the notch height (in screen points) keeps everything below the notch.
+    @ViewBuilder
+    private var expandedContent: some View {
+        let scale = AppSettings.shared.expandedScale
+        let topReserve = (viewModel.notchHeight + NotchViewModel.expandedTopOffset) / scale
+        VStack(spacing: 0) {
+            tabBar
+            switch viewModel.expandedTab {
+            case .media:
+                if let nowPlaying = mediaService.nowPlaying {
+                    MediaExpandedView(nowPlaying: nowPlaying, service: mediaService)
+                } else {
+                    VStack {
+                        Text("Lumio")
+                            .font(.title3.bold())
+                            .foregroundStyle(.white)
+                        Text(L("media.nothingPlaying"))
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            case .shelf:
+                ShelfView(shelf: shelfService)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 6)
+                    .padding(.bottom, 14)
+            case .copilot:
+                CopilotView(copilot: copilotService)
+            }
+        }
+        .padding(.top, topReserve)
+        .frame(
+            width: NotchViewModel.expandedBodyWidth,
+            height: viewModel.expandedBodyHeight + topReserve,
+            alignment: .top
+        )
+        .scaleEffect(scale, anchor: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var tabBar: some View {
@@ -191,6 +217,9 @@ struct NotchContainerView: View {
             Spacer()
             tabButton(.media, symbol: "music.note")
             tabButton(.shelf, symbol: "tray.full")
+            if AppSettings.shared.copilotEnabled {
+                tabButton(.copilot, symbol: "brain.head.profile")
+            }
             Button {
                 SettingsWindowManager.shared.open()
             } label: {
