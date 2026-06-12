@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      # CI has no "Lumio Self-Signed" certificate; build ad-hoc signed
+      # directly (make-dmg.sh would re-sign ad-hoc anyway).
+      - name: Build Release
+        run: |
+          xcodebuild -project Lumio.xcodeproj -scheme Lumio \
+            -configuration Release -derivedDataPath build \
+            CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO \
+            build
+
+      - name: Package DMG
+        run: |
+          APP="build/Build/Products/Release/Lumio.app"
+          VERSION=$(defaults read "$PWD/$APP/Contents/Info.plist" CFBundleShortVersionString)
+          STAGING=$(mktemp -d)
+          cp -R "$APP" "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+          codesign --force --deep --sign - "$STAGING/Lumio.app"
+          codesign --verify --deep --strict "$STAGING/Lumio.app"
+          mkdir -p dist
+          hdiutil create -volname "Lumio $VERSION" -srcfolder "$STAGING" \
+            -ov -format UDZO "dist/Lumio-$VERSION.dmg"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Lumio-${{ env.VERSION }}.dmg
+          draft: true
+          generate_release_notes: true
+          body: |
+            > **First launch:** the app is ad-hoc signed (not notarized).
+            > Right-click Lumio.app → Open → Open once, or run
+            > `xattr -d com.apple.quarantine /Applications/Lumio.app`.
